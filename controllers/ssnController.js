@@ -62,78 +62,107 @@ const createSsnDob = async (req, res) => {
 };
 
 const getAllSsns = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page) || 1;
-  const perPage = parseInt(req.query.perPage) || 20;
+  // Get pagination parameters
+  const page = parseInt(req?.query?.page) || 1;
+  const perPage = parseInt(req?.query?.perPage) || 20;
   const skip = (page - 1) * perPage;
 
-  const { base, state, city, zip, country, dob, dobMax, cs, name } = req.query;
+  // Extract filter parameters
+  const { 
+    base, 
+    state, 
+    city, 
+    zip, 
+    country, 
+    dob, 
+    dobMax, 
+    cs, 
+    name 
+  } = req.query;
 
+  // Build filter object
   const filters = { status: "Available" };
-
+  
+  // Only add non-empty filters
   if (base) filters.base = { $regex: base, $options: "i" };
-  if (state) filters.state = { $regex: state, $options: "i" };
   if (city) filters.city = { $regex: city, $options: "i" };
-  if (zip) filters.zip = { $regex: zip, $options: "i" };
   if (country) filters.country = { $regex: country, $options: "i" };
+  if (zip) filters.zip = { $regex: zip, $options: "i" };
+  if (state) filters.state = { $regex: state, $options: "i" };
   if (cs) filters.cs = { $regex: cs, $options: "i" };
   if (name) filters.firstName = { $regex: name, $options: "i" };
+
+  // Handle date range if provided
   if (dob && dobMax) {
-    filters.dob = {
-      $gte: new Date(`${dob}-01-01`),
-      $lte: new Date(`${dobMax}-12-31`),
-    };
+    const startDate = new Date(`${dob}-01-01`);
+    const endDate = new Date(`${dobMax}-12-31`);
+    filters.dob = { $gte: startDate, $lte: endDate };
   }
 
   try {
     const [ssns, count] = await Promise.all([
       SsnDob.aggregate([
         { $match: filters },
-        { $sort: { createdAt: -1 } },
-        { $skip: skip },
+        { $skip: skip },  // Proper pagination implementation
         { $limit: perPage },
-        {
-          $lookup: {
-            from: "baseprices",
-            localField: "price",
-            foreignField: "_id",
-            as: "price",
-          },
+        { 
+          $lookup: { 
+            from: "baseprices", 
+            localField: "price", 
+            foreignField: "_id", 
+            as: "price" 
+          } 
         },
-        {
+        { 
           $project: {
+            // Required fields
             firstName: 1,
-            dob: { $year: "$dob" }, // Extract only the year
+            dobYear: { $year: "$dob" },
             state: 1,
             zip: 1,
             description: 1,
-            otherFieldsExist: {
-              $cond: {
-                if: { $gt: [{ $size: { $objectToArray: "$$ROOT" } }, 5] },
-                then: true,
-                else: false,
-              },
-            },
-          },
+            
+            // Boolean flags for other fields
+            lastName: { $cond: [{ $ifNull: ["$lastName", false] }, true, false] },
+            country: { $cond: [{ $ifNull: ["$country", false] }, true, false] },
+            email: { $cond: [{ $ifNull: ["$email", false] }, true, false] },
+            emailPass: { $cond: [{ $ifNull: ["$emailPass", false] }, true, false] },
+            faUname: { $cond: [{ $ifNull: ["$faUname", false] }, true, false] },
+            faPass: { $cond: [{ $ifNull: ["$faPass", false] }, true, false] },
+            backupCode: { $cond: [{ $ifNull: ["$backupCode", false] }, true, false] },
+            securityQa: { $cond: [{ $ifNull: ["$securityQa", false] }, true, false] },
+            address: { $cond: [{ $ifNull: ["$address", false] }, true, false] },
+            ssn: { $cond: [{ $ifNull: ["$ssn", false] }, true, false] },
+            city: { $cond: [{ $ifNull: ["$city", false] }, true, false] },
+            gender: { $cond: [{ $ifNull: ["$gender", false] }, true, false] },
+            cs: { $cond: [{ $ifNull: ["$cs", false] }, true, false] },
+            
+            // Price information
+            price: { $arrayElemAt: ["$price", 0] }
+          } 
         },
-      ]),
-      SsnDob.countDocuments(filters),
+        { $sort: { firstName: 1 } }
+      ]).exec(),
+      SsnDob.countDocuments(filters)
     ]);
 
-    if (!ssns.length) {
-      return res.status(200).json({ message: "No files found", count: 0 });
+    if (!ssns?.length) {
+      return res.status(200).json({ 
+        message: "No records found",
+        count: 0,
+        ssns: [] 
+      });
     }
 
     res.json({
       ssns,
       count,
-      totalPages: Math.ceil(count / perPage),
       currentPage: page,
+      totalPages: Math.ceil(count / perPage)
     });
   } catch (error) {
-    console.error(error);
-    res
-      .status(500)
-      .json({ message: "Something went wrong, please try again." });
+    console.error("Error fetching SSNs:", error);
+    res.status(500).json({ message: "Error fetching records", error: error.message });
   }
 });
 
