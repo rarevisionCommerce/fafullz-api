@@ -168,7 +168,7 @@ const getCartByUserId = async (req, res) => {
       const availableProducts = []
       await Promise.all(
         cart.products.map(async (item, index) => {
-          let something
+          let something ={}
           if (
             item.productType === 'gVoice' ||
             item.productType === 'ssn' ||
@@ -185,7 +185,8 @@ const getCartByUserId = async (req, res) => {
             )
           }
 
-          if (something.status === 'Available') {
+
+          if (something?.status === 'Available') {
             availableProducts.push({
               description: something?.description,
               category: something?.productType,
