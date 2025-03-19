@@ -3,6 +3,7 @@ const Card = require("../models/Card");
 const Mail = require("../models/Mail");
 const csv = require("csv-parser");
 const fs = require("fs");
+const { default: mongoose } = require("mongoose");
 
 const uploadSsn = async (req, res) => {
   try {
@@ -12,11 +13,12 @@ const uploadSsn = async (req, res) => {
     }
 
     const csvfile = req.file;
-    if (csvfile.mimetype !== "text/csv") {
-      return res
-        .status(400)
-        .json({ message: "Invalid file type. Only CSV files are allowed." });
-    }
+    console.log(csvfile.mimetype);
+    // if (csvfile.mimetype !== "text/csv") {
+    //   return res
+    //     .status(400)
+    //     .json({ message: "Invalid file type. Only CSV files are allowed." });
+    // }
 
     // Validate required fields in request body
     const { sellerId, price, base } = req.body;

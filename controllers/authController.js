@@ -14,7 +14,7 @@ const login = async (req, res) => {
 
   const trimmedUserName = userName.trim();
 
-  let foundUser  = await User.findOne({ userName: trimmedUserName, accountType }).exec();
+  let foundUser  = await User.findOne({ userName: trimmedUserName }).exec();
 
   if (!foundUser) {
     return res.status(401).json({ message: "Unauthorized, No user found" });
