@@ -1,0 +1,2 @@
+ccnum,cvv,bank,type,class,level,exp,country,state,city,name,address,zip,email,phone,password,dob,ssn,dl,mmn,ip,price
+1234567890,334,samplebank,visa,credit,classic,Jan-20,usa,Texas,New York,sample name,123,345,sample@gmail.com,1 234 678342,123,1/1/2000,234,345,435,192.174.34,10
