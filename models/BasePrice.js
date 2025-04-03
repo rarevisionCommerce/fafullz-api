@@ -1,23 +1,28 @@
 const mongoose = require("mongoose");
 
-const baseSchema = new mongoose.Schema({
-  base: {
-    type: String,
-    required: true,
+const baseSchema = new mongoose.Schema(
+  {
+    base: {
+      type: String,
+      required: true,
+    },
+    price: {
+      type: Number,
+      required: true,
+    },
+    purchaseDate: {
+      type: Date,
+      required: false,
+    },
+    showDescription: {
+      type: Boolean,
+      default: false,
+    },
   },
-  price: {
-    type: Number,
-    required: true,
-  }, purchaseDate: {
-    type: Date,
-    required: false,
+
+  {
+    timestamps: true,
   }
-},
-
-{
-    timestamps:true
-}
-
 );
 
-module.exports = mongoose.model('BasePrice', baseSchema);
+module.exports = mongoose.model("BasePrice", baseSchema);

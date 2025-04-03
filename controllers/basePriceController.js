@@ -1,7 +1,7 @@
 const BasePrice = require("../models/BasePrice");
 
 const createBase = async (req, res) => {
-  const { base, price } = req.body;
+  const { base, price, showDescription=false } = req.body;
 
   if (!base || !price)
     return res.status(400).json({ message: "All fields are required" });
@@ -50,7 +50,7 @@ const getAllBases = async (req, res) => {
 
 const updateBase = async (req, res) => {
   const { baseId } = req.params;
-  const { base, price } = req.body;
+  const { base, price, showDescription=false } = req.body;
 
   if (!baseId || !base || !price)
     return res.status(400).json({ message: "All fields are required" });
@@ -73,8 +73,10 @@ const updateBase = async (req, res) => {
     }
     basePrice.base = base;
     basePrice.price = price;
+    basePrice.showDescription = showDescription;
 
-    await basePrice.save();
+    
+    const basep1 = await basePrice.save();
     res.status(200).json({ message: "Base update successfully" });
   } catch (error) {
     console.log(error);
