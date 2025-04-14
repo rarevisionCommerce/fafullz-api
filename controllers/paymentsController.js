@@ -4,7 +4,6 @@ const request = require("request");
 const Payment = require("../models/Payment");
 
 const getPaymentAdress = asyncHandler(async (req, res) => {
-  console.log("heree..");
   try {
     const userId = req.body.userId;
     const amount = req.body.amount;
@@ -468,9 +467,20 @@ const IPNCallbackNowPayments = async (req, res) => {
     const coin = req.body.pay_currency || "BTC";
     const network = req.body.pay_currency || "bitcoin";
     const wallet = req.body.pay_address;
+    const order_description = req.body.order_description;
     const amount = req.body.price_amount || 0; // Note: can get this from pricing object as well
 
     const date = new Date();
+
+    if (eventType === "finished" && order_description == "zyft") {
+      const data = { userId, amount, id };
+
+      sendToZyft(data);
+
+      return res
+        .status(200)
+        .json({ message: "Notification processed successfully" });
+    }
 
     // Get payment document
     const payment = await Payment.findOne({ userId: userId }).exec();
@@ -559,11 +569,34 @@ const IPNCallbackNowPayments = async (req, res) => {
       }
     }
 
-    return res.status(200).json({ message: "Notification processed successfully" });
+    return res
+      .status(200)
+      .json({ message: "Notification processed successfully" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Something went wrong!" });
   }
+};
+
+const sendToZyft = async (data) => {
+  var config = {
+    method: "post",
+    url: `${process.env.ZYFTAPI}/payments/notification`,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: data,
+  };
+
+  axios(config)
+    .then(function (response) {
+      console.log(response)
+      return;
+    })
+    .catch(function (error) {
+      console.log(error);
+      return;
+    });
 };
 
 module.exports = {
