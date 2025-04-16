@@ -475,7 +475,12 @@ const IPNCallbackNowPayments = async (req, res) => {
     if (eventType === "finished" && order_description == "zyft") {
       const data = { userId, amount, id };
 
-      sendToZyft(data);
+const result = await sendToZyft(data);
+if (result === 1) {
+  console.log("Notification sent successfully.");
+} else {
+  console.log("Failed to send notification.");
+}
 
       return res
         .status(200)
@@ -579,24 +584,23 @@ const IPNCallbackNowPayments = async (req, res) => {
 };
 
 const sendToZyft = async (data) => {
-  var config = {
-    method: "post",
-    url: `${process.env.ZYFTAPI}/payments/notification`,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: data,
-  };
+  try {
+    const response = await axios.post(
+      `${process.env.ZYFTAPI}/payments/notification`,
+      data,
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
-  axios(config)
-    .then(function (response) {
-      console.log(response)
-      return;
-    })
-    .catch(function (error) {
-      console.log(error);
-      return;
-    });
+    console.log("Zyft response:", response.data);
+    return 1; // success
+  } catch (error) {
+    console.error("Error sending to Zyft:", error?.response?.data || error.message);
+    return 0; // failure
+  }
 };
 
 module.exports = {
