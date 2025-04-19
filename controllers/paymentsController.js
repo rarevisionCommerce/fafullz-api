@@ -591,7 +591,7 @@ const sendToZyft = async (data) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Origin: "https://api.fafullz.com.com",
+          Origin: "https://api.fafullz.com",
         },
       }
     );
