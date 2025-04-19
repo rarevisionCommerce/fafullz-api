@@ -475,12 +475,12 @@ const IPNCallbackNowPayments = async (req, res) => {
     if (eventType === "finished" && order_description == "zyft") {
       const data = { userId, amount, id };
 
-const result = await sendToZyft(data);
-if (result === 1) {
-  console.log("Notification sent successfully.");
-} else {
-  console.log("Failed to send notification.");
-}
+      const result = await sendToZyft(data);
+      if (result === 1) {
+        console.log("Notification sent successfully.");
+      } else {
+        console.log("Failed to send notification.");
+      }
 
       return res
         .status(200)
@@ -591,6 +591,7 @@ const sendToZyft = async (data) => {
       {
         headers: {
           "Content-Type": "application/json",
+          Origin: "https://api.fafullz.com.com",
         },
       }
     );
@@ -598,7 +599,10 @@ const sendToZyft = async (data) => {
     console.log("Zyft response:", response.data);
     return 1; // success
   } catch (error) {
-    console.error("Error sending to Zyft:", error?.response?.data || error.message);
+    console.error(
+      "Error sending to Zyft:",
+      error?.response?.data || error.message
+    );
     return 0; // failure
   }
 };
