@@ -8,6 +8,7 @@ router.use(verifyJWT);
 router
     .post('/:userId', orderController.checkoutProducts)
     .get('/:userId', orderController.getMyOrders)
+    .patch('/remove', orderController.removeProducts)
 
 
 module.exports = router

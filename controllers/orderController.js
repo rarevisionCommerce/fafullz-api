@@ -8,8 +8,7 @@ const Account = require("../models/Account");
 const Ssn = require("../models/SsnDob");
 const Order = require("../models/Orders");
 const mongoose = require("mongoose");
-const Payment = require('../models/Payment');
-
+const Payment = require("../models/Payment");
 
 const productMap = {
   gVoice: GoogleVoice,
@@ -22,7 +21,7 @@ const productMap = {
 };
 
 const checkoutProducts = async (req, res) => {
-  const {userId} = req.params;
+  const { userId } = req.params;
   if (!userId) return res.status(400).json({ message: "user id is required" });
 
   try {
@@ -41,7 +40,6 @@ const checkoutProducts = async (req, res) => {
     const balance = payment.balance;
 
     const totalPrice = await findTotalCartPrice(userId);
-    
 
     if (parseFloat(balance) < parseFloat(totalPrice)) {
       return res.status(400).json({ message: "Insufficient balance" });
@@ -108,7 +106,10 @@ const getMyOrders = async (req, res) => {
           return;
         }
 
-        const product = await ProductModel.findById(productId).sort({updatedAt: -1}).lean().exec();
+        const product = await ProductModel.findById(productId)
+          .sort({ updatedAt: -1 })
+          .lean()
+          .exec();
 
         if (!product) {
           return;
@@ -129,96 +130,66 @@ const getMyOrders = async (req, res) => {
   }
 };
 
-
-const findTotalCartPrice = async(userId) => {
+const findTotalCartPrice = async (userId) => {
   let totalprice = 0;
-  const cart = await Cart.findOne({userId: userId}).lean().exec();
+  const cart = await Cart.findOne({ userId: userId }).lean().exec();
 
-  if(!cart) return totalprice;
+  if (!cart) return totalprice;
 
   await Promise.all(
-    cart.products.map(async(item)=>{
-      let something
-          if (
-            item.productType === 'gVoice' ||
-            item.productType === 'ssn' ||
-            item.productType === 'mail'
-          ) {
-            // Handle gVoice, ssn, and mail products that require population
-            something = await productMap[item.productType]
-              .findById({ _id: item.productId })
-              .populate('price')
-          } else {
-            // Handle products that are not gVoice, ssn, or mail and do not require population
-            something = await productMap[item.productType].findById(
-              item.productId,
-            )
-          }
+    cart.products.map(async (item) => {
+      let something;
+      if (
+        item.productType === "gVoice" ||
+        item.productType === "ssn" ||
+        item.productType === "mail"
+      ) {
+        // Handle gVoice, ssn, and mail products that require population
+        something = await productMap[item.productType]
+          .findById({ _id: item.productId })
+          .populate("price");
+      } else {
+        // Handle products that are not gVoice, ssn, or mail and do not require population
+        something = await productMap[item.productType].findById(item.productId);
+      }
 
-          if (something.status === 'Available') {
-           totalprice +=  parseFloat(something?.price?.price)  || parseFloat(something?.price);
-          }
+      if (something.status === "Available") {
+        totalprice +=
+          parseFloat(something?.price?.price) || parseFloat(something?.price);
+      }
     })
-  )
+  );
   return totalprice;
+};
 
+const removeProducts = async (req, res) => {
+  const { productIds, userId } = req.body;
 
-}
+  if (!Array.isArray(productIds) || productIds.length === 0 || !userId) {
+    return res
+      .status(400)
+      .json({ message: "productIds must be a non-empty array." });
+  }
 
+  try {
+    const result = await Order.findOneAndUpdate(
+      { userId },
+      { $pull: { products: { productId: { $in: productIds } } } }
+    );
 
-// const getMyOrders = async (req, res) => {
-//   const userId = req.params.userId;
-//   if (!userId) return res.status(400).json({ message: "user id is required" });
-
-//   const order = await Order.findOne({ userId: userId }).lean().exec();
-
-//   if (!order || order?.products?.length < 1) {
-//     return res.status(404).json({ message: "You have no order" });
-//   }
-
-//   const { page = 1, limit = 10 } = req.query; // Default page is 1 and limit is 10
-
-//   const startIndex = (page - 1) * limit;
-//   const endIndex = page * limit;
-
-//   const products = {};
-
-//   for (const item of order.products) {
-//     const productId = mongoose.Types.ObjectId(item.productId);
-//     const productType = item.productType;
-//     const ProductModel = productMap[productType];
-
-//     if (!ProductModel) {
-//       continue;
-//     }
-
-//     if (!products[productType]) {
-//       products[productType] = [];
-//     }
-
-//     const productIds = order.products
-//       .filter((p) => p.productType === productType)
-//       .map((p) => mongoose.Types.ObjectId(p.productId));
-
-//     const productQuery = { _id: { $in: productIds } };
-//     const productResults = await ProductModel.find(productQuery)
-//       .skip(startIndex)
-//       .limit(limit)
-//       .lean()
-//       .exec();
-
-//     products[productType].push(...productResults);
-//   }
-
-//   res.status(200).json({
-//     totalPages: Math.ceil(order.products.length / limit),
-//     currentPage: page,
-//     products: products,
-//   });
-// };
-
+    return res.status(200).json({
+      message: "Products removed from orders successfully.",
+      matchedCount: result.matchedCount || result.n,
+      modifiedCount: result.modifiedCount || result.nModified,
+    });
+  } catch (err) {
+    console.error("Error removing products from orders:", err);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
 
 module.exports = {
   checkoutProducts,
   getMyOrders,
+  removeProducts
 };

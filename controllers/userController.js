@@ -60,7 +60,7 @@ const createNewUser = asyncHandler(async (req, res) => {
       .json({ message: "A seller must have atleast one category" });
 
   //confirming required data
-  if (!userName || !password || !accountType) {
+  if (!userName || !password) {
     return res.status(400).json({ message: "All fields required" });
   }
 
