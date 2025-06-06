@@ -2,8 +2,7 @@ const Account = require("../models/Account");
 const asyncHandler = require("express-async-handler");
 
 const uploadAccount = async (req, res) => {
-  console.log(req.file)
-  console.log(req.body)
+
 
   try {
     if (!req.file) {

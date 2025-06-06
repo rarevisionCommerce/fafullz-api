@@ -118,7 +118,7 @@ const createNewUser = asyncHandler(async (req, res) => {
 
 const changePassword = async (req, res) => {
   const { userId } = req.params;
-  const { password } = req.body;
+  const { password, type = "self" } = req.body;
 
   if (!userId) return res.status(400).json({ message: "user id is required" });
 
@@ -133,7 +133,9 @@ const changePassword = async (req, res) => {
     user.password = await bcrypt.hash(password, 10); // salt rounds
     await user.save();
 
-    res.json({ message: `Your password has been updated` });
+    res.json({
+      message: `${type == "reset" ? "User password has been reset to 123456" : "Your password has been updated"} `,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Something went wrong" });
