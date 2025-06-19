@@ -11,6 +11,7 @@ const mongoose = require('mongoose')
 const PORT = process.env.PORT || 3501
 const allowedOrigins = require('./config/allowedOrigins')
 const bodyParser = require('body-parser');
+const { logger } = require('./middleware/logger')
 
 // app.use(logger)
 
