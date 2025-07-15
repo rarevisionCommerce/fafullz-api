@@ -1,5 +1,6 @@
 const SsnDob = require("../models/SsnDob");
 const asyncHandler = require("express-async-handler");
+const User = require("../models/User");
 
 const createSsnDob = async (req, res) => {
   const {
@@ -68,21 +69,11 @@ const getAllSsns = asyncHandler(async (req, res) => {
   const skip = (page - 1) * perPage;
 
   // Extract filter parameters
-  const { 
-    base, 
-    state, 
-    city, 
-    zip, 
-    country, 
-    dob, 
-    dobMax, 
-    cs, 
-    name 
-  } = req.query;
+  const { base, state, city, zip, country, dob, dobMax, cs, name } = req.query;
 
   // Build filter object
   const filters = { status: "Available" };
-  
+
   // Only add non-empty filters
   if (base) filters.base = { $regex: base, $options: "i" };
   if (city) filters.city = { $regex: city, $options: "i" };
@@ -103,17 +94,17 @@ const getAllSsns = asyncHandler(async (req, res) => {
     const [ssns, count] = await Promise.all([
       SsnDob.aggregate([
         { $match: filters },
-        { $skip: skip },  // Proper pagination implementation
+        { $skip: skip }, // Proper pagination implementation
         { $limit: perPage },
-        { 
-          $lookup: { 
-            from: "baseprices", 
-            localField: "price", 
-            foreignField: "_id", 
-            as: "price" 
-          } 
+        {
+          $lookup: {
+            from: "baseprices",
+            localField: "price",
+            foreignField: "_id",
+            as: "price",
+          },
         },
-        { 
+        {
           $project: {
             // Required fields
             firstName: 1,
@@ -121,36 +112,44 @@ const getAllSsns = asyncHandler(async (req, res) => {
             state: 1,
             zip: 1,
             description: 1,
-            
+
             // Boolean flags for other fields
-            lastName: { $cond: [{ $ifNull: ["$lastName", false] }, true, false] },
+            lastName: {
+              $cond: [{ $ifNull: ["$lastName", false] }, true, false],
+            },
             country: { $cond: [{ $ifNull: ["$country", false] }, true, false] },
             email: { $cond: [{ $ifNull: ["$email", false] }, true, false] },
-            emailPass: { $cond: [{ $ifNull: ["$emailPass", false] }, true, false] },
+            emailPass: {
+              $cond: [{ $ifNull: ["$emailPass", false] }, true, false],
+            },
             faUname: { $cond: [{ $ifNull: ["$faUname", false] }, true, false] },
             faPass: { $cond: [{ $ifNull: ["$faPass", false] }, true, false] },
-            backupCode: { $cond: [{ $ifNull: ["$backupCode", false] }, true, false] },
-            securityQa: { $cond: [{ $ifNull: ["$securityQa", false] }, true, false] },
+            backupCode: {
+              $cond: [{ $ifNull: ["$backupCode", false] }, true, false],
+            },
+            securityQa: {
+              $cond: [{ $ifNull: ["$securityQa", false] }, true, false],
+            },
             address: { $cond: [{ $ifNull: ["$address", false] }, true, false] },
             ssn: { $cond: [{ $ifNull: ["$ssn", false] }, true, false] },
             city: { $cond: [{ $ifNull: ["$city", false] }, true, false] },
             gender: { $cond: [{ $ifNull: ["$gender", false] }, true, false] },
             cs: { $cond: [{ $ifNull: ["$cs", false] }, true, false] },
-            
+
             // Price information
-            price: { $arrayElemAt: ["$price", 0] }
-          } 
+            price: { $arrayElemAt: ["$price", 0] },
+          },
         },
-        { $sort: { firstName: 1 } }
+        { $sort: { firstName: 1 } },
       ]).exec(),
-      SsnDob.countDocuments(filters)
+      SsnDob.countDocuments(filters),
     ]);
 
     if (!ssns?.length) {
-      return res.status(200).json({ 
+      return res.status(200).json({
         message: "No records found",
         count: 0,
-        ssns: [] 
+        ssns: [],
       });
     }
 
@@ -158,11 +157,13 @@ const getAllSsns = asyncHandler(async (req, res) => {
       ssns,
       count,
       currentPage: page,
-      totalPages: Math.ceil(count / perPage)
+      totalPages: Math.ceil(count / perPage),
     });
   } catch (error) {
     console.error("Error fetching SSNs:", error);
-    res.status(500).json({ message: "Error fetching records", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Error fetching records", error: error.message });
   }
 });
 
@@ -202,8 +203,41 @@ const getAllSsnsBySellerId = asyncHandler(async (req, res) => {
   res.json({ ssns, count });
 });
 
+const updateSellerProductStatus = async (req, res) => {
+  const { sellerId, status } = req.body;
+  if (!sellerId || !status) {
+    return res
+      .status(400)
+      .json({ message: "sellerId and status are required" });
+  }
+  try {
+    await User.findOneAndUpdate({jabberId: sellerId}, {
+      productStatus: status,
+    });
+
+    await SsnDob.updateMany(
+      {
+        sellerId: sellerId,
+        status: { $in: ["Available", "Suspended"] },
+      },
+      { $set: { status: status } }
+    );
+
+    res.status(200).json({
+      message: `Seller product status updated to ${status}`,
+    });
+  } catch (error) {
+    console.error("Error updating seller product status:", error);
+    res.status(500).json({
+      message: "Error updating seller product status",
+      // error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createSsnDob,
   getAllSsns,
   getAllSsnsBySellerId,
+  updateSellerProductStatus,
 };

@@ -4,6 +4,7 @@ const Mail = require("../models/Mail");
 const csv = require("csv-parser");
 const fs = require("fs");
 const { default: mongoose } = require("mongoose");
+const User = require("../models/User");
 
 const uploadSsn = async (req, res) => {
   try {
@@ -22,6 +23,9 @@ const uploadSsn = async (req, res) => {
 
     // Validate required fields in request body
     const { sellerId, price, base } = req.body;
+
+    const seller = await User.findById(sellerId);
+
     if (!sellerId || !price || !base) {
       return res
         .status(400)
@@ -98,7 +102,7 @@ const uploadSsn = async (req, res) => {
       ssn: result.ssn,
       cs: result.cs || null,
       city: result.city,
-      status: "Available",
+      status: seller?.productStatus || "Available",
       isPaid: "Not Paid",
       productType: "ssn",
     }));

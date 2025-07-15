@@ -130,15 +130,19 @@ const changePassword = async (req, res) => {
       return res.status(400).json({ message: "User not found" });
     }
 
-    if(type == "reset"){
-      password = "123456"
+    if (type == "reset") {
+      password = "123456";
     }
 
     user.password = await bcrypt.hash(password, 10); // salt rounds
     await user.save();
 
     res.json({
-      message: `${type == "reset" ? "User password has been reset to 123456" : "Your password has been updated"} `,
+      message: `${
+        type == "reset"
+          ? "User password has been reset to 123456"
+          : "Your password has been updated"
+      } `,
     });
   } catch (error) {
     console.log(error);
@@ -160,6 +164,11 @@ const getUserById = async (req, res) => {
       .status(204)
       .json({ message: `No user matches id: ${req.params.userId}` });
   }
+
+  if (!user?.productStatus) {
+    user.productStatus = "Available"; // Ensure productStatus is set
+  }
+
   res.json(user);
 };
 

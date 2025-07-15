@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "Active",
     },
+    productStatus: {
+      type: String,
+      default: "Available",
+    },
 
     refreshToken: String,
   },
