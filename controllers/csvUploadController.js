@@ -24,7 +24,7 @@ const uploadSsn = async (req, res) => {
     // Validate required fields in request body
     const { sellerId, price, base } = req.body;
 
-    const seller = await User.findById(sellerId);
+    const seller = await User.findOne({jabberId: sellerId});
 
     if (!sellerId || !price || !base) {
       return res
