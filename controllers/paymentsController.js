@@ -472,10 +472,8 @@ const IPNCallbackNowPayments = async (req, res) => {
 
     const date = new Date();
 
-    if (eventType === "finished" && order_description == "zyft") {
-      const data = { userId, amount, id };
-
-      const result = await sendToZyft(data);
+    if (order_description == "vshop") {
+      const result = await sendToVshop(req.body);
       if (result === 1) {
         console.log("Notification sent successfully.");
       } else {
@@ -583,10 +581,10 @@ const IPNCallbackNowPayments = async (req, res) => {
   }
 };
 
-const sendToZyft = async (data) => {
+const sendToVshop = async (data) => {
   try {
     const response = await axios.post(
-      `${process.env.ZYFTAPI}/payments/notification`,
+      `${process.env.VSHOPAPI}/api/payments/nowpayments/webhook`,
       data,
       {
         headers: {
@@ -596,11 +594,11 @@ const sendToZyft = async (data) => {
       }
     );
 
-    console.log("Zyft response:", response.data);
+    console.log("vshop response:", response.data);
     return 1; // success
   } catch (error) {
     console.error(
-      "Error sending to Zyft:",
+      "Error sending to vshop:",
       error?.response?.data || error.message
     );
     return 0; // failure
