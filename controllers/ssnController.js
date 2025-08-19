@@ -167,6 +167,57 @@ const getAllSsns = asyncHandler(async (req, res) => {
   }
 });
 
+const getAllSsnsAdmin = asyncHandler(async (req, res) => {
+  // Get pagination parameters
+  const page = parseInt(req?.query?.page) || 1;
+  const perPage = parseInt(req?.query?.perPage) || 20;
+  const skip = (page - 1) * perPage;
+
+  // Extract filter parameters
+  const { base, status, sellerId, paid } = req.query;
+
+  // Build filter object
+  const filters = {};
+
+  // Only add non-empty filters
+  if (base) filters.price = base;
+  if (sellerId) filters.sellerId = sellerId;
+  if (status) filters.status = status;
+  if (paid) filters.isPaid = paid;
+
+  try {
+    const [ssns, count] = await Promise.all([
+      SsnDob.find(filters)
+        .skip(parseInt(skip))
+        .limit(parseInt(perPage))
+        .populate("price")
+        .lean()
+        .exec(),
+      SsnDob.countDocuments(filters),
+    ]);
+
+    if (!ssns?.length) {
+      return res.status(200).json({
+        message: "No records found",
+        count: 0,
+        ssns: [],
+      });
+    }
+
+    res.json({
+      ssns,
+      count,
+      currentPage: page,
+      totalPages: Math.ceil(count / perPage),
+    });
+  } catch (error) {
+    console.error("Error fetching SSNs:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching records", error: error.message });
+  }
+});
+
 const getAllSsnsBySellerId = asyncHandler(async (req, res) => {
   const sellerId = req.params.sellerId;
 
@@ -211,9 +262,12 @@ const updateSellerProductStatus = async (req, res) => {
       .json({ message: "sellerId and status are required" });
   }
   try {
-    await User.findOneAndUpdate({jabberId: sellerId}, {
-      productStatus: status,
-    });
+    await User.findOneAndUpdate(
+      { jabberId: sellerId },
+      {
+        productStatus: status,
+      }
+    );
 
     await SsnDob.updateMany(
       {
@@ -235,9 +289,34 @@ const updateSellerProductStatus = async (req, res) => {
   }
 };
 
+const deleteProducts = async (req, res) => {
+  const { productIds } = req.body;
+
+
+  if (!Array.isArray(productIds) || productIds.length === 0) {
+    return res
+      .status(400)
+      .json({ message: "productIds must be a non-empty array." });
+  }
+
+  try {
+    const result = await SsnDob.deleteMany({ _id: { $in: productIds } });
+
+    return res.status(200).json({
+      message: "Orders deleted permanently.",
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    console.error("Error deleting orders:", err);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 module.exports = {
   createSsnDob,
   getAllSsns,
   getAllSsnsBySellerId,
   updateSellerProductStatus,
+  getAllSsnsAdmin,
+  deleteProducts
 };
