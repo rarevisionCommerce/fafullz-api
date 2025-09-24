@@ -105,6 +105,7 @@ const uploadSsn = async (req, res) => {
       status: seller?.productStatus || "Available",
       isPaid: "Not Paid",
       productType: "ssn",
+      enrollment: result.enrollment || null,
     }));
 
     // Insert data into MongoDB

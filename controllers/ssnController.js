@@ -1,6 +1,7 @@
 const SsnDob = require("../models/SsnDob");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
+const e = require("express");
 
 const createSsnDob = async (req, res) => {
   const {
@@ -135,6 +136,9 @@ const getAllSsns = asyncHandler(async (req, res) => {
             city: { $cond: [{ $ifNull: ["$city", false] }, true, false] },
             gender: { $cond: [{ $ifNull: ["$gender", false] }, true, false] },
             cs: { $cond: [{ $ifNull: ["$cs", false] }, true, false] },
+            enrollment: {
+              $cond: [{ $ifNull: ["$enrollment", false] }, true, false],
+            },
 
             // Price information
             price: { $arrayElemAt: ["$price", 0] },
@@ -292,7 +296,6 @@ const updateSellerProductStatus = async (req, res) => {
 const deleteProducts = async (req, res) => {
   const { productIds } = req.body;
 
-
   if (!Array.isArray(productIds) || productIds.length === 0) {
     return res
       .status(400)
@@ -318,5 +321,5 @@ module.exports = {
   getAllSsnsBySellerId,
   updateSellerProductStatus,
   getAllSsnsAdmin,
-  deleteProducts
+  deleteProducts,
 };

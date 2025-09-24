@@ -18,6 +18,7 @@ const SsnSchema = new mongoose.Schema(
     securityQa: { type: String, required: true },
     state: { type: String, required: false },
     gender: { type: String, required: false },
+    enrollment: { type: String, required: false },
     price: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "BasePrice",
