@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     jabberId: {
       type: String,
-      required: true,
+      required: false,
     },
     userName: {
       type: String,
@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
     productStatus: {
       type: String,
       default: "Available",
+    },
+    accountType: {
+      type: String,
+      default: "web",
     },
 
     refreshToken: String,

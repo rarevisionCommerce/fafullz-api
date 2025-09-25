@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const axios = require("axios");
 const request = require("request");
 const Payment = require("../models/Payment");
+const { logBalanceChange } = require("./userBalLogController");
 
 const getPaymentAdress = asyncHandler(async (req, res) => {
   try {
@@ -472,19 +473,6 @@ const IPNCallbackNowPayments = async (req, res) => {
 
     const date = new Date();
 
-    if (order_description == "vshop") {
-      const result = await sendToVshop(req.body);
-      if (result === 1) {
-        console.log("Notification sent successfully.");
-      } else {
-        console.log("Failed to send notification.");
-      }
-
-      return res
-        .status(200)
-        .json({ message: "Notification processed successfully" });
-    }
-
     // Get payment document
     const payment = await Payment.findOne({ userId: userId }).exec();
 
@@ -506,6 +494,13 @@ const IPNCallbackNowPayments = async (req, res) => {
           ],
         });
         await newPayment.save();
+        logBalanceChange(
+          userId,
+          amount,
+          "credit",
+          "Deposit",
+          newPayment.balance
+        );
         console.log({
           message: "First time depo attempt  ----Deposited ",
           userId: userId,
@@ -524,6 +519,14 @@ const IPNCallbackNowPayments = async (req, res) => {
           amount: amount,
         });
         await payment.save();
+
+        logBalanceChange(
+          userId,
+          amount,
+          "credit",
+          "Deposit",
+          payment.balance
+        );
 
         console.log({
           message: "Not first time depo attempt ----Deposited",

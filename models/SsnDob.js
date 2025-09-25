@@ -24,6 +24,11 @@ const SsnSchema = new mongoose.Schema(
       ref: "BasePrice",
       required: true,
     },
+    buyerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: false,
+    },
     zip: { type: String, required: false },
     dob: { type: Date, required: true },
     address: { type: String, required: true },

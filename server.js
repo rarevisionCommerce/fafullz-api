@@ -65,7 +65,7 @@ app.use('/csv', require('./routes/csvUploadRoutes'));
 app.use('/categories', require('./routes/productCategoryRoutes'));
 app.use('/refunds', require('./routes/refundRoutes'));
 app.use('/admin-settings', require('./routes/adminSetttingsRoutes'));
-
+app.use('/bot', require('./routes/botRoutes'));
 
 
 
