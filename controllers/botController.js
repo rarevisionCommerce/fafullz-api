@@ -8,6 +8,7 @@ const fs = require("fs");
 const path = require("path");
 const BasePrice = require("../models/BasePrice");
 const expressAsyncHandler = require("express-async-handler");
+const { default: axios } = require("axios");
 
 const { NOWPAYMENT_API_KEY, API_DOMAIN } = process.env;
 
@@ -48,7 +49,7 @@ const createBotUser = async (req, res) => {
       user = await User.create({
         userName: username,
         password: hashedPassword,
-        role: "Buyer",
+        roles: ["Buyer"],
         accountType: "bot",
       });
     }
@@ -262,7 +263,10 @@ const checkOutSSNByNumber = async (req, res) => {
       filtersApplied:
         Object.keys(filters).length > 0
           ? Object.entries(filters)
-              .filter(([_, value]) => value)
+              .filter(
+                ([key, value]) =>
+                  value && !["price", "totalCost", "dob"].includes(key) // 👈 exclude unwanted keys
+              )
               .map(([key, value]) => `${key}: ${value}`)
               .join(", ")
           : "None",
@@ -419,19 +423,6 @@ const createPayment = asyncHandler(async (req, res) => {
   }
   const userId = user._id.toString();
 
-  // Validate input
-  const validation = validatePaymentData({ amount, cryptoCurrency, userId });
-
-  if (!validation.isValid) {
-    const response = formatResponse(
-      false,
-      null,
-      validation.errors.join(", "),
-      400
-    );
-    return res.status(response.statusCode).json(response);
-  }
-
   try {
     const paymentData = {
       price_amount: parseFloat(amount),
@@ -487,11 +478,78 @@ const createPayment = asyncHandler(async (req, res) => {
   }
 });
 
+const getUserTransactions = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+  const { page = 1, limit = 10, status, startDate, endDate } = req.query;
+
+  // ✅ Check if user exists
+  const user = await User.findOne({ userName: username }).lean();
+  if (!user) {
+    const response = formatResponse(false, null, "User not found", 404);
+    return res.status(response.statusCode).json(response);
+  }
+
+  // ✅ Get Payment document
+  const payment = await Payment.findOne({ userId: user._id }).lean();
+  if (!payment) {
+    const response = formatResponse(true, {
+      balance: 0,
+      transactions: [],
+      pagination: { page: 1, limit, total: 0, pages: 0 },
+    });
+    return res.status(response.statusCode).json(response);
+  }
+
+  // ✅ Filter transactions
+  let filteredTransactions = payment.transaction;
+
+  if (status) {
+    filteredTransactions = filteredTransactions.filter(
+      (t) => t.status === status
+    );
+  }
+
+  if (startDate || endDate) {
+    filteredTransactions = filteredTransactions.filter((t) => {
+      const txDate = new Date(t.date);
+      if (startDate && txDate < new Date(startDate)) return false;
+      if (endDate && txDate > new Date(endDate)) return false;
+      return true;
+    });
+  }
+
+  // ✅ Sort by date (latest first)
+  filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // ✅ Pagination
+  const total = filteredTransactions.length;
+  const startIndex = (page - 1) * limit;
+  const paginatedTransactions = filteredTransactions.slice(
+    startIndex,
+    startIndex + parseInt(limit)
+  );
+
+  // ✅ Response
+  const response = formatResponse(true, {
+    balance: payment.balance,
+    transactions: [],
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  });
+
+  res.status(response.statusCode).json(response);
+});
+
 module.exports = {
   getSsns,
   checkOutSSNByNumber,
   createBotUser,
   getAllBases,
   getAllCurrencies,
-  createPayment
+  createPayment,
+  getUserTransactions,
 };
