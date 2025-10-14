@@ -2,6 +2,7 @@ const SsnDob = require("../models/SsnDob");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const e = require("express");
+const { buildStateFilter } = require("../utils/stateFilterBuilder");
 
 const createSsnDob = async (req, res) => {
   const {
@@ -80,9 +81,11 @@ const getAllSsns = asyncHandler(async (req, res) => {
   if (city) filters.city = { $regex: city, $options: "i" };
   if (country) filters.country = { $regex: country, $options: "i" };
   if (zip) filters.zip = { $regex: zip, $options: "i" };
-  if (state) filters.state = { $regex: state, $options: "i" };
   if (cs) filters.cs = { $regex: cs, $options: "i" };
   if (name) filters.firstName = { $regex: name, $options: "i" };
+  if (state) {
+    Object.assign(filters, buildStateFilter(state));
+  }
 
   // Handle date range if provided
   if (dob && dobMax) {

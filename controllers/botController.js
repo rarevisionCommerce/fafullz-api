@@ -9,6 +9,7 @@ const path = require("path");
 const BasePrice = require("../models/BasePrice");
 const expressAsyncHandler = require("express-async-handler");
 const { default: axios } = require("axios");
+const { buildStateFilter } = require("../utils/stateFilterBuilder");
 
 const { NOWPAYMENT_API_KEY, API_DOMAIN } = process.env;
 
@@ -86,9 +87,11 @@ const getSsns = async (req, res) => {
     if (city) filters.city = { $regex: city, $options: "i" };
     if (country) filters.country = { $regex: country, $options: "i" };
     if (zip) filters.zip = { $regex: zip, $options: "i" };
-    if (state) filters.state = { $regex: state, $options: "i" };
     if (cs) filters.cs = { $regex: cs, $options: "i" };
     if (name) filters.firstName = { $regex: name, $options: "i" };
+    if (state) {
+      Object.assign(filters, buildStateFilter(state));
+    }
 
     // Handle date range if provided
     if (dob && dobMax) {
@@ -119,6 +122,20 @@ const checkOutSSNByNumber = async (req, res) => {
     if ("base" in filters) {
       filters.price = filters.base;
       delete filters.base;
+    }
+
+    if ("state" in filters) {
+      // Extract the raw value
+      const stateValue = filters.state;
+
+      // Build new filter for state
+      const stateFilter = buildStateFilter(stateValue);
+
+      // Remove the old raw state key
+      delete filters.state;
+
+      // Merge the new one (which may contain $or)
+      Object.assign(filters, stateFilter);
     }
 
     const { yearFrom, yearTo } = filters;
