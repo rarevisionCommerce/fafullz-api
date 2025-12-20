@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const asyncHandler = require("express-async-handler");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
+
 const { addFundsOnAccountCreation } = require("./adminSettingController");
 
 //get all users

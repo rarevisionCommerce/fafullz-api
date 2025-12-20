@@ -20,60 +20,79 @@ const productMap = {
 }
 
 const addToCart = async (req, res) => {
-  const { productId, productType, userId } = req.body
+  const items = Array.isArray(req.body) ? req.body : [req.body]
+
+  if (!items.length) {
+    return res.status(400).json({ message: "Request body is empty" })
+  }
+
+  const { userId } = items[0]
 
   try {
-    if (!productMap[productType]) {
-      return res.status(400).send({ message: 'Invalid product type' })
-    }
+    // Fetch or create cart
+    let cart = await Cart.findOne({ userId })
 
-    const product = await productMap[productType]
-      .findById(mongoose.Types.ObjectId(productId))
-      .populate('price')
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' })
-    }
-
-    const cart = await Cart.findOne({ userId: userId })
     if (!cart) {
-      const newCart = new Cart({
-        userId: userId,
-        products: [
-          {
-            productId: productId,
-            productType: productType,
-            price: product.price.price,
-           
-          },
-        ],
+      cart = new Cart({
+        userId,
+        products: [],
       })
-      await newCart.save()
-      res.status(200).json({ message: 'Item added to cart' })
-    } else {
-      const productIndex = cart.products.findIndex(
-        (product) => product.productId === productId,
-      )
-      if (productIndex !== -1) {
-        res.status(400).json({ message: 'Product already added to cart' })
-      } else {
-        cart.products.push({
-          productId: productId,
-          productType: productType,
-          price: product.price.price,
-          
-        })
-        await cart.save()
-        res.status(200).json({ message: 'Item added to cart' })
-      }
     }
-  } catch (err) {
-    console.error(err)
-    res
-      .status(500)
-      .json({
-        message:
-          'Something went wrong, if the problem persists contact support',
+
+    const existingProductIds = new Set(
+      cart.products.map(p => p.productId.toString())
+    )
+
+    const addedProducts = []
+    const skippedProducts = []
+
+    for (const item of items) {
+      const { productId, productType } = item
+
+      if (!productMap[productType]) {
+        skippedProducts.push({ productId, reason: "Invalid product type" })
+        continue
+      }
+
+      if (existingProductIds.has(productId)) {
+        skippedProducts.push({ productId, reason: "Already in cart" })
+        continue
+      }
+
+      const product = await productMap[productType]
+        .findById(new mongoose.Types.ObjectId(productId))
+        .populate("price")
+
+      if (!product) {
+        skippedProducts.push({ productId, reason: "Product not found" })
+        continue
+      }
+
+      cart.products.push({
+        productId,
+        productType,
+        price: product.price.price,
       })
+
+      existingProductIds.add(productId)
+      addedProducts.push(productId)
+    }
+
+    await cart.save()
+
+    return res.status(200).json({
+      message: "Cart updated",
+      addedCount: addedProducts.length,
+      skippedCount: skippedProducts.length,
+      addedProducts,
+      skippedProducts,
+    })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({
+      message:
+        "Something went wrong, if the problem persists contact support",
+    })
   }
 }
 

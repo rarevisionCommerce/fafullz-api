@@ -1,7 +1,8 @@
 const Payment = require("../models/Payment");
 const SsnDob = require("../models/SsnDob");
 const User = require("../models/User");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
+
 const { logBalanceChange } = require("./userBalLogController");
 const TxtBuilder = require("../utils/txtBuilder"); // Import the utility
 const fs = require("fs");
