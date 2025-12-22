@@ -71,7 +71,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
   const skip = (page - 1) * perPage;
 
   // Extract filter parameters
-  const { base, state, city, zip, country, dob, dobMax, cs, name } = req.query;
+  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment } = req.query;
 
   // Build filter object
   const filters = { status: "Available" };
@@ -83,6 +83,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
   if (zip) filters.zip = { $regex: zip, $options: "i" };
   if (cs) filters.cs = { $regex: cs, $options: "i" };
   if (name) filters.firstName = { $regex: name, $options: "i" };
+  if (enrollment) filters.enrollment = { $regex: enrollment, $options: "i" };
   if (state) {
     Object.assign(filters, buildStateFilter(state));
   }
@@ -139,9 +140,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
             city: { $cond: [{ $ifNull: ["$city", false] }, true, false] },
             gender: { $cond: [{ $ifNull: ["$gender", false] }, true, false] },
             cs: { $cond: [{ $ifNull: ["$cs", false] }, true, false] },
-            enrollment: {
-              $cond: [{ $ifNull: ["$enrollment", false] }, true, false],
-            },
+            enrollment: 1,
 
             // Price information
             price: { $arrayElemAt: ["$price", 0] },
