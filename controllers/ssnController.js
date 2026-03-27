@@ -71,7 +71,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
   const skip = (page - 1) * perPage;
 
   // Extract filter parameters
-  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment } = req.query;
+  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment, twoFa } = req.query;
 
   // Build filter object
   const filters = { status: "Available" };
@@ -88,6 +88,17 @@ const getAllSsns = asyncHandler(async (req, res) => {
     Object.assign(filters, buildStateFilter(state));
   }
 
+  if (twoFa) {
+    // if yes select records where twoFa has value
+    if(twoFa === "Yes") {
+      filters.twoFa = { $ne: null };
+    }
+    // if no select records where twoFa is null
+    if(twoFa === "No") {
+      filters.twoFa = null;
+    }
+  }
+
   // Handle date range if provided
   if (dob && dobMax) {
     const startDate = new Date(`${dob}-01-01`);
@@ -96,11 +107,46 @@ const getAllSsns = asyncHandler(async (req, res) => {
   }
 
   try {
-    const [ssns, count] = await Promise.all([
-      SsnDob.aggregate([
-        { $match: filters },
-        { $skip: skip }, // Proper pagination implementation
-        { $limit: perPage },
+    const devsFilters = { ...filters, sellerId: "thedevs" };
+    const othersFilters = { ...filters, sellerId: { $ne: "thedevs" } };
+
+    const [devsCount, othersCount] = await Promise.all([
+      SsnDob.countDocuments(devsFilters),
+      SsnDob.countDocuments(othersFilters),
+    ]);
+
+    const count = devsCount + othersCount;
+
+    const actualCumulative = (p) => {
+      const targetTotal = p * perPage;
+      const devsPerPage = Math.ceil(perPage * 0.2);
+
+      let devs = Math.min(p * devsPerPage, devsCount);
+      let others = Math.min(targetTotal - devs, othersCount);
+
+      const shortfall = targetTotal - (devs + others);
+      if (shortfall > 0) {
+        devs = Math.min(devs + shortfall, devsCount);
+      }
+
+      return { devs, others };
+    };
+
+    const prev = actualCumulative(page - 1);
+    const curr = actualCumulative(page);
+
+    const devsSkip = prev.devs;
+    const devsLimit = curr.devs - prev.devs;
+
+    const othersSkip = prev.others;
+    const othersLimit = curr.others - prev.others;
+
+    const getAggregation = (matchCond, skp, lmt) => {
+      if (lmt <= 0) return Promise.resolve([]);
+      return SsnDob.aggregate([
+        { $match: matchCond },
+        { $skip: skp },
+        { $limit: lmt },
         {
           $lookup: {
             from: "baseprices",
@@ -118,7 +164,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
             zip: 1,
             description: 1,
 
-            // Boolean flags for other fields
+            // Boolean flags for other fields retrun false if empty string or null
             lastName: {
               $cond: [{ $ifNull: ["$lastName", false] }, true, false],
             },
@@ -140,6 +186,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
             city: { $cond: [{ $ifNull: ["$city", false] }, true, false] },
             gender: { $cond: [{ $ifNull: ["$gender", false] }, true, false] },
             cs: { $cond: [{ $ifNull: ["$cs", false] }, true, false] },
+            twoFa: { $cond: [{ $ifNull: ["$twoFa", false] }, true, false] },
             enrollment: 1,
 
             // Price information
@@ -147,9 +194,15 @@ const getAllSsns = asyncHandler(async (req, res) => {
           },
         },
         { $sort: { firstName: 1 } },
-      ]).exec(),
-      SsnDob.countDocuments(filters),
+      ]).exec();
+    };
+
+    const [devsSsns, othersSsns] = await Promise.all([
+      getAggregation(devsFilters, devsSkip, devsLimit),
+      getAggregation(othersFilters, othersSkip, othersLimit),
     ]);
+
+    const ssns = [...devsSsns, ...othersSsns];
 
     if (!ssns?.length) {
       return res.status(200).json({
