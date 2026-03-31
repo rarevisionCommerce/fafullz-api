@@ -5,10 +5,14 @@ const userSchema = new mongoose.Schema(
     jabberId: {
       type: String,
       required: false,
+      set: v => v ? v.replace(/\s+/g, '') : v,
+      trim: true,
     },
     userName: {
       type: String,
       required: true,
+      // trim
+      trim: true,
     },
     password: {
       type: String,

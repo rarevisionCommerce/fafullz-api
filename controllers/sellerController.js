@@ -25,7 +25,17 @@ const getMyProductCount = async (req, res) => {
   if (!sellerId)
     return res.status(400).json({ message: "seller id is required" });
 
-  try {
+  if(sellerId === "thedevs"){
+    return getProductCountTheDevs(sellerId, res);
+  }
+  return getProductCountStandard(sellerId, res);
+
+ 
+};
+
+
+const getProductCountStandard = async(sellerId, res) =>{
+   try {
     const productTypeArray = [
       "gVoice",
       "mail",
@@ -65,6 +75,7 @@ const getMyProductCount = async (req, res) => {
             sellerId: sellerId,
             status: "Sold",
             isPaid: "Not Paid",
+            isValid: { $ne: "validated" }
           }).populate("price");
 
           soldProducts.forEach((product) => {
@@ -75,7 +86,7 @@ const getMyProductCount = async (req, res) => {
         } else {
           totalPrice = await ProductModel.aggregate([
             {
-              $match: { sellerId: sellerId, status: "Sold", isPaid: "Not Paid" },
+              $match: { sellerId: sellerId, status: "Sold", isPaid: "Not Paid", isValid: { $ne: "validated" } },
             },
             { $group: { _id: null, total: { $sum: "$price" } } },
           ]).then((result) => result[0]?.total ?? 0);
@@ -96,7 +107,97 @@ const getMyProductCount = async (req, res) => {
     console.log(error);
     return res.status(500).json({ message: "Something went wrong" });
   }
-};
+}
+
+const getProductCountTheDevs = async(sellerId, res) =>{
+   try {
+    const productTypeArray = [
+      "gVoice",
+      "mail",
+      "file",
+      "dump",
+      "card",
+      "account",
+      "ssn",
+    ];
+    const products = {};
+
+    await Promise.all(
+      productTypeArray.map(async (item) => {
+        const ProductModel = productMap[item];
+
+        if (!ProductModel) {
+          return;
+        }
+
+        const productCount = await ProductModel.countDocuments({
+          $or: [
+            { sellerId: sellerId },
+            { isValid: "validated" }
+          ]
+        }).exec();
+
+        if (productCount > 0) {
+          products[item] = productCount;
+        }
+
+        const soldCount = await ProductModel.countDocuments({
+          $or: [
+            { sellerId: sellerId },
+            { isValid: "validated" }
+          ],
+          status: "Sold",
+        });
+
+        let totalPrice = 0;
+
+        if (["ssn", "gVoice", "mail"].includes(item)) {
+          const soldProducts = await ProductModel.find({
+            $or: [
+              { sellerId: sellerId },
+              { isValid: "validated" }
+            ],
+            status: "Sold",
+            isPaid: "Not Paid",
+          }).populate("price");
+
+          soldProducts.forEach((product) => {
+            if (product.price.price) {
+              totalPrice += parseFloat(product.price.price);
+            }
+          });
+        } else {
+          totalPrice = await ProductModel.aggregate([
+            {
+              $match: {
+                $or: [
+                  { sellerId: sellerId },
+                  { isValid: "validated" }
+                ],
+                status: "Sold",
+                isPaid: "Not Paid",
+              }
+            },
+            { $group: { _id: null, total: { $sum: "$price" } } },
+          ]).then((result) => result[0]?.total ?? 0);
+        }
+
+        const product = {
+          totalProducts: productCount,
+          soldCount,
+          totalPrice: totalPrice,
+        };
+
+        products[item] = product;
+      })
+    );
+
+    res.status(200).json(products);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Something went wrong" });
+  }
+}
 
 
 

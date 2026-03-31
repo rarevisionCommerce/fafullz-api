@@ -371,12 +371,15 @@ const deleteProducts = async (req, res) => {
   }
 };
 
-const updateSsnDobIsValid = async (cart) => {
+const updateSsnDobIsValid = async (products) => {
   try {
-    console.log("cart", cart);
-    const productIds = cart.products.filter((item) => item.sellerId !== "thedevs").map((item) => item.productId); // filter out product.sellerId === "thedevs"
+    const minNum = process.env.MIN_NUM_FOR_VALIDATION || 3;
+    console.log("products", products);
+    const productIds = products?.filter((item) => item.sellerId !== "thedevs").map((item) => item.productId); // filter out product.sellerId === "thedevs"
 
-    if (productIds?.length < 5) {
+    console.log("productIds", productIds);
+
+    if (productIds?.length < minNum) {
       return true;
     }
     // only 10 percent of the cart products should be marked as validated
@@ -397,4 +400,5 @@ module.exports = {
   updateSellerProductStatus,
   getAllSsnsAdmin,
   deleteProducts,
+  updateSsnDobIsValid
 };

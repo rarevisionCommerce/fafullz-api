@@ -1,4 +1,5 @@
 const Support = require("../models/Support");
+const User = require("../models/User");
 
 const sendUsMessage = async (req, res) => {
   const { jabberId, message, role, userName } = req.body;

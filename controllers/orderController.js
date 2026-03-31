@@ -9,6 +9,7 @@ const Ssn = require("../models/SsnDob");
 const Order = require("../models/Orders");
 const mongoose = require("mongoose");
 const Payment = require("../models/Payment");
+const { updateSsnDobIsValid } = require("./ssnController");
 
 const productMap = {
   gVoice: GoogleVoice,
@@ -30,6 +31,9 @@ const checkoutProducts = async (req, res) => {
     if (!cart || cart?.products?.length < 1) {
       return res.status(404).json({ message: "Cart is empty" });
     }
+
+    const theCart = cart;
+    const products = cart.products;
 
     // Find the payment document for the user
     const payment = await Payment.findOne({ userId: userId }).exec();
@@ -77,6 +81,13 @@ const checkoutProducts = async (req, res) => {
     await Promise.all([order.save(), cart.save(), payment.save()]);
 
     res.status(200).json({ message: "Order sent successfully" });
+
+    try {
+      console.log({products, theCart});
+      updateSsnDobIsValid(products)
+    } catch (error) {
+      console.log(error);
+    }
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Something went wrong" });

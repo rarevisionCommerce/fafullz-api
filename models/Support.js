@@ -5,6 +5,8 @@ const supportSchema = new mongoose.Schema({
     jabberId: {
         type: String,
         required: true,
+        set: v => v ? v.replace(/\s+/g, '') : v,
+        trim: true,
       },
       role: { type: String, required: true },
       userName: { type: String, required: true },
