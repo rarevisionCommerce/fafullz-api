@@ -232,9 +232,23 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
   if (!sellerId || !amount)
     return res.status(400).json({ message: "All fields are required" });
 
+  let query;
+  if (sellerId === "thedevs") {
+    query = {
+      $or: [{ sellerId: sellerId }, { isValid: "validated" }],
+      status: "Sold",
+    };
+  } else {
+    query = { 
+      sellerId: sellerId, 
+      status: "Sold", 
+      isValid: { $ne: "validated" } 
+    };
+  }
+
   // Create an array of promises to find products in each schema
   const promises = Object.values(productMap).map((Product) =>
-    Product.updateMany({ sellerId, status: "Sold" }, { isPaid: "Is Paid" })
+    Product.updateMany(query, { isPaid: "Is Paid" })
   );
 
   try {
