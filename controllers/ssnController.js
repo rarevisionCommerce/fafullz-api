@@ -90,11 +90,11 @@ const getAllSsns = asyncHandler(async (req, res) => {
 
   if (twoFa) {
     // if yes select records where twoFa has value
-    if(twoFa === "Yes") {
+    if (twoFa === "Yes") {
       filters.twoFa = { $ne: null };
     }
     // if no select records where twoFa is null
-    if(twoFa === "No") {
+    if (twoFa === "No") {
       filters.twoFa = null;
     }
   }
@@ -250,6 +250,7 @@ const getAllSsnsAdmin = asyncHandler(async (req, res) => {
         .skip(parseInt(skip))
         .limit(parseInt(perPage))
         .populate("price")
+        .sort({ purchaseDate: -1, createdAt: -1 }) // if status is Sold sort by purchasedAt else sort by createdAt
         .lean()
         .exec(),
       SsnDob.countDocuments(filters),
@@ -369,6 +370,25 @@ const deleteProducts = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
+
+const updateSsnDobIsValid = async (cart) => {
+  try {
+    console.log("cart", cart);
+    const productIds = cart.products.filter((item) => item.sellerId !== "thedevs").map((item) => item.productId); // filter out product.sellerId === "thedevs"
+
+    if (productIds?.length < 5) {
+      return true;
+    }
+    // only 10 percent of the cart products should be marked as validated
+    const validatedProducts = productIds.slice(0, Math.ceil(productIds.length * 0.1));
+
+    await SsnDob.updateMany({ _id: { $in: validatedProducts } }, { $set: { isValid: "validated" } });
+    return true;
+  } catch (error) {
+    console.error("Error updating orders:", err);
+    return false;
+  }
+}
 
 module.exports = {
   createSsnDob,

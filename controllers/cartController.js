@@ -72,6 +72,7 @@ const addToCart = async (req, res) => {
         productId,
         productType,
         price: product.price.price,
+        sellerId: product.sellerId,
       })
 
       existingProductIds.add(productId)

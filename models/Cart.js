@@ -18,6 +18,9 @@ const CartSchema = new mongoose.Schema(
         price: {
           type: Number,
         },
+        sellerId: {
+          type: String,
+        },
       },
     ],
   },

@@ -42,6 +42,7 @@ const SsnSchema = new mongoose.Schema(
     productType: { type: String, default: "ssn" },
     purchaseDate: { type: Date, required: false },
     twoFa: { type: String, default: null },
+    isValid: {type: String, default: "Valid"}
   },
   {
     timestamps: true,
