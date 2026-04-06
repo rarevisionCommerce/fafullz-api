@@ -193,6 +193,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
             cs: { $cond: [{ $ifNull: ["$cs", false] }, true, false] },
             twoFa: { $cond: [{ $ifNull: ["$twoFa", false] }, true, false] },
             enrollment: 1,
+            enrollmentDetails: 1,
 
             // Price information
             price: { $arrayElemAt: ["$price", 0] },
