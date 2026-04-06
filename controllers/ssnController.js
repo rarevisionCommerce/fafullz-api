@@ -71,7 +71,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
   const skip = (page - 1) * perPage;
 
   // Extract filter parameters
-  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment, twoFa } = req.query;
+  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment, twoFa, college } = req.query;
 
   // Build filter object
   const filters = { status: "Available" };
@@ -87,6 +87,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
   if (state) {
     Object.assign(filters, buildStateFilter(state));
   }
+  if (college) filters.college = { $or: [{ description: { $regex: college, $options: "i" } }, { enrollmentDetails: { $regex: college, $options: "i" } }] };
 
   if (twoFa) {
     // if yes select records where twoFa has value
@@ -250,6 +251,7 @@ const getAllSsnsAdmin = asyncHandler(async (req, res) => {
         .skip(parseInt(skip))
         .limit(parseInt(perPage))
         .populate("price")
+        .populate("buyerId", "userName")
         .sort({ purchaseDate: -1, createdAt: -1 }) // if status is Sold sort by purchasedAt else sort by createdAt
         .lean()
         .exec(),
