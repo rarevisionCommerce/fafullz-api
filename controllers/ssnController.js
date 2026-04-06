@@ -87,8 +87,12 @@ const getAllSsns = asyncHandler(async (req, res) => {
   if (state) {
     Object.assign(filters, buildStateFilter(state));
   }
-  if (college) filters.college = { $or: [{ description: { $regex: college, $options: "i" } }, { enrollmentDetails: { $regex: college, $options: "i" } }] };
-
+  if (college) {
+    filters.$or = [
+      { description: { $regex: college, $options: "i" } },
+      { enrollmentDetails: { $regex: college, $options: "i" } }
+    ];
+  }
   if (twoFa) {
     // if yes select records where twoFa has value
     if (twoFa === "Yes") {
