@@ -69,6 +69,7 @@ const checkoutProducts = async (req, res) => {
 
         // update product status
         product.status = "Sold";
+        product.buyerId = userId;
         product.purchaseDate = new Date().toISOString();
         await product.save();
       })

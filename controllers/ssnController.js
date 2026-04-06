@@ -256,7 +256,6 @@ const getAllSsnsAdmin = asyncHandler(async (req, res) => {
         .skip(parseInt(skip))
         .limit(parseInt(perPage))
         .populate("price")
-        .populate("buyerId", "userName")
         .sort({ purchaseDate: -1, createdAt: -1 }) // if status is Sold sort by purchasedAt else sort by createdAt
         .lean()
         .exec(),
