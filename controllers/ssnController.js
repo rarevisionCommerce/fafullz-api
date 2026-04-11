@@ -210,6 +210,9 @@ const getAllSsns = asyncHandler(async (req, res) => {
 
     const ssns = [...devsSsns, ...othersSsns];
 
+    console.log("devsSsns", devsSsns.length);
+    console.log("othersSsns", othersSsns.length);
+
     // Mix the products to ensure 'theodore' products are distributed 
     // rather than clustered at the very beginning of the results.
     for (let i = ssns.length - 1; i > 0; i--) {
