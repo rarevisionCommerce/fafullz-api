@@ -112,8 +112,8 @@ const getAllSsns = asyncHandler(async (req, res) => {
   }
 
   try {
-    const devsFilters = { ...filters, sellerId: "thedevs" };
-    const othersFilters = { ...filters, sellerId: { $ne: "thedevs" } };
+    const devsFilters = { ...filters, sellerId: "theodore" };
+    const othersFilters = { ...filters, sellerId: { $ne: "theodore" } };
 
     const [devsCount, othersCount] = await Promise.all([
       SsnDob.countDocuments(devsFilters),
@@ -388,7 +388,7 @@ const updateSsnDobIsValid = async (products) => {
   try {
     const minNum = process.env.MIN_NUM_FOR_VALIDATION || 3;
     console.log("products", products);
-    const productIds = products?.filter((item) => item.sellerId !== "thedevs").map((item) => item.productId); // filter out product.sellerId === "thedevs"
+    const productIds = products?.filter((item) => item.sellerId !== "theodore").map((item) => item.productId); // filter out product.sellerId === "theodore"
 
     console.log("productIds", productIds);
 

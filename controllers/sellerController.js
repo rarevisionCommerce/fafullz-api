@@ -25,17 +25,17 @@ const getMyProductCount = async (req, res) => {
   if (!sellerId)
     return res.status(400).json({ message: "seller id is required" });
 
-  if(sellerId === "thedevs"){
-    return getProductCountTheDevs(sellerId, res);
+  if (sellerId === "theodore") {
+    return getProductCounttheodore(sellerId, res);
   }
   return getProductCountStandard(sellerId, res);
 
- 
+
 };
 
 
-const getProductCountStandard = async(sellerId, res) =>{
-   try {
+const getProductCountStandard = async (sellerId, res) => {
+  try {
     const productTypeArray = [
       "gVoice",
       "mail",
@@ -109,8 +109,8 @@ const getProductCountStandard = async(sellerId, res) =>{
   }
 }
 
-const getProductCountTheDevs = async(sellerId, res) =>{
-   try {
+const getProductCounttheodore = async (sellerId, res) => {
+  try {
     const productTypeArray = [
       "gVoice",
       "mail",
@@ -233,16 +233,16 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
     return res.status(400).json({ message: "All fields are required" });
 
   let query;
-  if (sellerId === "thedevs") {
+  if (sellerId === "theodore") {
     query = {
       $or: [{ sellerId: sellerId }, { isValid: "validated" }],
       status: "Sold",
     };
   } else {
-    query = { 
-      sellerId: sellerId, 
-      status: "Sold", 
-      isValid: { $ne: "validated" } 
+    query = {
+      sellerId: sellerId,
+      status: "Sold",
+      isValid: { $ne: "validated" }
     };
   }
 
@@ -311,7 +311,7 @@ const suspendSellerProducts = async (req, res) => {
       ProductModel.updateMany({ status: 'Available', sellerId }, { $set: { status: 'Suspended' } }).exec()
     );
 
-     await Promise.all(promises);
+    await Promise.all(promises);
 
     // results.forEach((res, index) => {
     //   const productType = Object.keys(productMap)[index];
@@ -343,7 +343,7 @@ const unSuspendSellerProducts = async (req, res) => {
       ProductModel.updateMany({ status: 'Suspended', sellerId }, { $set: { status: 'Available' } }).exec()
     );
 
-     await Promise.all(promises);
+    await Promise.all(promises);
 
     // results.forEach((res, index) => {
     //   const productType = Object.keys(productMap)[index];

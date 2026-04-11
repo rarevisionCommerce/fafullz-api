@@ -6,7 +6,7 @@ const SsnDob = require('./models/SsnDob');
 // Define default config and pull from env
 const REASSIGN_LIMIT = parseInt(process.env.REASSIGN_LIMIT, 10) || 30;
 const AVAILABLE_THRESHOLD = parseInt(process.env.AVAILABLE_THRESHOLD, 10) || 10000;
-const TARGET_SELLER_ID = 'thedevs';
+const TARGET_SELLER_ID = 'theodore';
 
 const runReassignment = async () => {
     try {
