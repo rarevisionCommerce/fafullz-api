@@ -26,7 +26,8 @@ const SsnSchema = new mongoose.Schema(
       required: true,
     },
     buyerId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: false,
     },
     zip: { type: String, required: false },

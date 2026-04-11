@@ -239,7 +239,7 @@ const getAllSsnsAdmin = asyncHandler(async (req, res) => {
   const skip = (page - 1) * perPage;
 
   // Extract filter parameters
-  const { base, status, sellerId, paid } = req.query;
+  const { base, status, sellerId, paid, fromDate, toDate } = req.query;
 
   // Build filter object
   const filters = {};
@@ -249,6 +249,12 @@ const getAllSsnsAdmin = asyncHandler(async (req, res) => {
   if (sellerId) filters.sellerId = sellerId;
   if (status) filters.status = status;
   if (paid) filters.isPaid = paid;
+  if (fromDate) {
+    filters.createdAt = { $gte: new Date(fromDate) };
+  }
+  if (toDate) {
+    filters.createdAt = { $lte: new Date(toDate) };
+  }
 
   try {
     const [ssns, count] = await Promise.all([
@@ -256,6 +262,7 @@ const getAllSsnsAdmin = asyncHandler(async (req, res) => {
         .skip(parseInt(skip))
         .limit(parseInt(perPage))
         .populate("price")
+        .populate("buyerId", "userName")
         .sort({ purchaseDate: -1, createdAt: -1 }) // if status is Sold sort by purchasedAt else sort by createdAt
         .lean()
         .exec(),
