@@ -210,6 +210,13 @@ const getAllSsns = asyncHandler(async (req, res) => {
 
     const ssns = [...devsSsns, ...othersSsns];
 
+    // Mix the products to ensure 'theodore' products are distributed 
+    // rather than clustered at the very beginning of the results.
+    for (let i = ssns.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [ssns[i], ssns[j]] = [ssns[j], ssns[i]];
+    }
+
     if (!ssns?.length) {
       return res.status(200).json({
         message: "No records found",
