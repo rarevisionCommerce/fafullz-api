@@ -104,6 +104,8 @@ const uploadSsn = async (req, res) => {
       enrollment: result.enrollment || "N/A",
       enrollmentDetails: result.enrollmentDetails || "N/A",
       twoFa: result.twoFa || null,
+      level: result.level === "University Dropout" ? "University Withdrawn" : result.level === "College Dropout" ? "College Withdrawn" : result.level || null,
+      programs: result.programs || null,
     }));
 
     // Insert data into MongoDB

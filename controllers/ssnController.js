@@ -71,7 +71,7 @@ const getAllSsns = asyncHandler(async (req, res) => {
   const skip = (page - 1) * perPage;
 
   // Extract filter parameters
-  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment, twoFa, college } = req.query;
+  const { base, state, city, zip, country, dob, dobMax, cs, name, enrollment, twoFa, college, level } = req.query;
 
   // Build filter object
   const filters = { status: "Available" };
@@ -93,6 +93,11 @@ const getAllSsns = asyncHandler(async (req, res) => {
       { enrollmentDetails: { $regex: college, $options: "i" } }
     ];
   }
+
+  if (level) {
+    filters.level = level;
+  }
+
   if (twoFa) {
     // if yes select records where twoFa has value
     if (twoFa === "Yes") {
