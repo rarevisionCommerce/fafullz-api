@@ -7,6 +7,9 @@ router.use(verifyJWT);
 
 router
     .get('/',  adminDashController.getADminDashData)
+    .get('/stats', adminDashController.getDashStats)
+    .get('/sales', adminDashController.getSalesData)
+    .get('/profit', adminDashController.getProfitData);
 
 
 

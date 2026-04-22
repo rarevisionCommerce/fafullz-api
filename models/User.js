@@ -45,6 +45,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "web",
     },
+    totalPaid: {
+      type: Number,
+      default: 0,
+    },
+    totalProfit: {
+      type: Number,
+      default: 0,
+    },
+    totalDeposited: {
+      type: Number,
+      default: 0,
+    },
+    
 
     refreshToken: String,
   },

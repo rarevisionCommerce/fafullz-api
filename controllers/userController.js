@@ -16,8 +16,13 @@ const getAllUsers = asyncHandler(async (req, res) => {
   const filters = {
     userName: { $regex: userName, $options: "i" },
     jabberId: { $regex: jabberId, $options: "i" },
-    roles: { $in: [role] },
   };
+
+  if (role == "all") {
+    filters.roles = { $in: ["Seller", "Admin"] };
+  } else {
+    filters.roles = { $in: [role] };
+  }
 
   // Find all users with the specified role
   try {

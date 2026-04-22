@@ -60,7 +60,7 @@ const checkoutProducts = async (req, res) => {
       cart.products.map(async (item) => {
         let product = await productMap[item.productType].findById(
           mongoose.Types.ObjectId(item.productId)
-        );
+        ).populate("price");
 
         order.products.push({
           productId: item.productId,
@@ -71,6 +71,7 @@ const checkoutProducts = async (req, res) => {
         product.status = "Sold";
         product.buyerId = userId;
         product.purchaseDate = new Date().toISOString();
+        product.purchasePrice = product?.price?.price;
         await product.save();
       })
     );

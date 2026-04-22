@@ -3,6 +3,7 @@ const axios = require("axios");
 const request = require("request");
 const Payment = require("../models/Payment");
 const { logBalanceChange } = require("./userBalLogController");
+const Transaction = require("../models/Transaction");
 
 const getPaymentAdress = asyncHandler(async (req, res) => {
   try {
@@ -45,11 +46,11 @@ const getPaymentAdress = asyncHandler(async (req, res) => {
       } else {
         console.log(
           "Charge created by user:" +
-            userId +
-            " charge code: " +
-            JSON.parse(body).data.code +
-            " at :" +
-            new Date()
+          userId +
+          " charge code: " +
+          JSON.parse(body).data.code +
+          " at :" +
+          new Date()
         );
         console.log(body);
         const addressObj = {
@@ -308,6 +309,18 @@ const addPayment = async (req, res) => {
 
       await payment.save();
     }
+
+    const transaction = new Transaction({
+      userId: buyerId,
+      id: Math.random().toString(36).substring(6).toUpperCase(),
+      status: "Confirmed",
+      date: new Date().toISOString().slice(0, 10),
+      wallet: "Deposited by Admin",
+      coin: "--",
+      amount: amount,
+    });
+
+    await transaction.save();
 
     res.status(200).json({ message: `Payment added!` });
   } catch (error) {
@@ -575,6 +588,18 @@ const IPNCallbackNowPayments = async (req, res) => {
       }
     }
 
+    const transaction = new Transaction({
+      userId: userId,
+      id: Math.random().toString(36).substring(6).toUpperCase(),
+      status: eventType === "finished" ? "CONFIRMED" : "FAILED",
+      date: new Date().toISOString().slice(0, 10),
+      wallet: wallet,
+      coin: coin,
+      amount: amount,
+    });
+
+    await transaction.save();
+
     return res
       .status(200)
       .json({ message: "Notification processed successfully" });
@@ -584,29 +609,65 @@ const IPNCallbackNowPayments = async (req, res) => {
   }
 };
 
-const sendToVshop = async (data) => {
+const getTransactionHistory = async (req, res) => {
   try {
-    const response = await axios.post(
-      `${process.env.VSHOPAPI}/api/payments/nowpayments/webhook`,
-      data,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Origin: "https://api.fafullz.com",
-        },
-      }
-    );
+    const { userId, status, page, limit, search, startDate, endDate } = req.query;
 
-    console.log("vshop response:", response.data);
-    return 1; // success
+    const query = {};
+    if (userId) query.userId = userId;
+    if (status) query.status = status;
+    if (search) query.search = search;
+    if (startDate) query.createdAt = { $gte: startDate };
+    if (endDate) query.createdAt = { $lte: endDate };
+
+    const formattedPage = parseInt(req.query.page) || 1;
+    const formattedLimit = parseInt(req.query.limit) || 10;
+    const skip = (formattedPage - 1) * formattedLimit;
+
+    const transactions = await Transaction.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(formattedLimit);
+
+    const total = await Transaction.countDocuments(query);
+
+    return res.status(200).json({
+      transactions,
+      total,
+      page,
+      limit,
+    });
   } catch (error) {
-    console.error(
-      "Error sending to vshop:",
-      error?.response?.data || error.message
-    );
-    return 0; // failure
+    console.log(error);
+    return res.status(500).json({ message: "Something went wrong!" });
   }
 };
+
+const getTotalUserBalance = async (req, res) => {
+  try {
+    const totalBalance = await Payment.aggregate([
+      {
+        $group: {
+          _id: "$userId",
+          totalBalance: { $sum: "$balance" },
+        },
+      },
+    ]);
+
+    const topTenUserBalances = await Payment.find().sort({ balance: -1 })
+      .limit(10)
+      .populate("userId", "userName");
+    return res.status(200).json({
+      totalBalance,
+      topTenUserBalances,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Something went wrong!" });
+  }
+};
+
+
 
 module.exports = {
   getPaymentAdress,
@@ -620,4 +681,6 @@ module.exports = {
   createPaymentNowpayments,
   IPNCallbackNowPayments,
   getMinimumAmount,
+  getTransactionHistory,
+  getTotalUserBalance,
 };

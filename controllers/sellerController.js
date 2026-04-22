@@ -8,6 +8,8 @@ const Ssn = require("../models/SsnDob");
 const Order = require("../models/Orders");
 const mongoose = require("mongoose");
 const WithdrawRequest = require("../models/WithdrawRequest");
+const Profit = require("../models/Profit");
+const SsnDob = require("../models/SsnDob");
 
 const productMap = {
   gVoice: GoogleVoice,
@@ -101,6 +103,13 @@ const getProductCountStandard = async (sellerId, res) => {
         products[item] = product;
       })
     );
+
+    const sold = await SsnDob.find({
+      sellerId: sellerId,
+      status: "Sold",
+    });
+
+    console.log(products, sold);
 
     res.status(200).json(products);
   } catch (error) {
@@ -200,7 +209,6 @@ const getProductCounttheodore = async (sellerId, res) => {
 }
 
 
-
 const deleteProductById = async (req, res) => {
   const { productId, productType } = req.params;
 
@@ -229,6 +237,7 @@ const deleteProductById = async (req, res) => {
 const updateIspaidStatusToAllSellersProducts = async (req, res) => {
   const sellerId = req.params.sellerId;
   const amount = req.query.amount
+  const profit = req.query.profit || 0
   if (!sellerId || !amount)
     return res.status(400).json({ message: "All fields are required" });
 
@@ -258,6 +267,13 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
       { sellerId: sellerId, status: "Pending" },
       { $set: { status: "Processed", amount: amount } }
     );
+
+    if (profit > 0) {
+      await Profit.create({
+        userName: sellerId,
+        amount: profit,
+      })
+    }
 
     res.status(200).json({ message: "Product status updated successfully" });
   } catch (err) {

@@ -3,7 +3,7 @@ const router = express.Router();
 const basePriceController = require('../controllers/basePriceController');
 const verifyJWT = require('../middleware/verifyJWT')
 
-router.use(verifyJWT);
+// router.use(verifyJWT);
 
 router
     .post('/', basePriceController.createBase)

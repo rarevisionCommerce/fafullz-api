@@ -41,6 +41,7 @@ const SsnSchema = new mongoose.Schema(
     isPaid: { type: String, default: "Not Paid" },
     productType: { type: String, default: "ssn" },
     purchaseDate: { type: Date, required: false },
+    purchasePrice: { type: Number, default: 0 },
     twoFa: { type: String, default: null },
     level: { type: String, default: null },
     programs: { type: String, default: null },

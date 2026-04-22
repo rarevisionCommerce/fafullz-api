@@ -14,8 +14,9 @@ router
     .post('/nowpayments/create-payment', paymentsController.createPaymentNowpayments)
     .post('/nowpayments/ipn-callback', paymentsController.IPNCallbackNowPayments)
     .get('/nowpayments/min-amount/:crypto', paymentsController.getMinimumAmount)
+    .get('/transactions', paymentsController.getTransactionHistory)
+    .get('/total-balance', paymentsController.getTotalUserBalance)
 
-    
 
 
 
