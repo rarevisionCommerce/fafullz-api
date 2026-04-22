@@ -4,7 +4,7 @@ const request = require("request");
 const Payment = require("../models/Payment");
 const { logBalanceChange } = require("./userBalLogController");
 const Transaction = require("../models/Transaction");
-
+const User = require("../models/User");
 const getPaymentAdress = asyncHandler(async (req, res) => {
   try {
     const userId = req.body.userId;
@@ -588,6 +588,7 @@ const IPNCallbackNowPayments = async (req, res) => {
       }
     }
 
+
     const transaction = new Transaction({
       userId: userId,
       id: Math.random().toString(36).substring(6).toUpperCase(),
@@ -616,7 +617,16 @@ const getTransactionHistory = async (req, res) => {
     const query = {};
     if (userId) query.userId = userId;
     if (status) query.status = status;
-    if (search) query.search = search;
+    if (search) {
+      const matchedUsers = await User.find({ userName: { $regex: search, $options: "i" } }).select('_id');
+      const userIds = matchedUsers.map(u => u._id);
+      query.$or = [
+        { id: { $regex: search, $options: "i" } },
+        { wallet: { $regex: search, $options: "i" } },
+        { status: { $regex: search, $options: "i" } },
+        { userId: { $in: userIds } }
+      ];
+    }
     if (startDate) query.createdAt = { $gte: startDate };
     if (endDate) query.createdAt = { $lte: endDate };
 
@@ -627,6 +637,7 @@ const getTransactionHistory = async (req, res) => {
     const transactions = await Transaction.find(query)
       .sort({ createdAt: -1 })
       .skip(skip)
+      .populate("userId", "userName")
       .limit(formattedLimit);
 
     const total = await Transaction.countDocuments(query);
