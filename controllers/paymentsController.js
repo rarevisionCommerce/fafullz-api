@@ -589,17 +589,20 @@ const IPNCallbackNowPayments = async (req, res) => {
     }
 
 
-    const transaction = new Transaction({
-      userId: userId,
-      id: Math.random().toString(36).substring(6).toUpperCase(),
-      status: eventType === "finished" ? "CONFIRMED" : "FAILED",
-      date: new Date().toISOString().slice(0, 10),
-      wallet: wallet,
-      coin: coin,
-      amount: amount,
-    });
+    if (["finished", "failed", "expired"].includes(eventType)) {
+      const transaction = new Transaction({
+        userId: userId,
+        id: Math.random().toString(36).substring(6).toUpperCase(),
+        status: eventType === "finished" ? "CONFIRMED" : "FAILED",
+        date: new Date().toISOString().slice(0, 10),
+        wallet: wallet,
+        coin: coin,
+        amount: amount,
+      });
 
-    await transaction.save();
+      await transaction.save();
+    }
+
 
     return res
       .status(200)
