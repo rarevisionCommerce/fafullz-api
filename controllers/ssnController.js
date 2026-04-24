@@ -218,12 +218,11 @@ const getAllSsns = asyncHandler(async (req, res) => {
     console.log("devsSsns", devsSsns.length);
     console.log("othersSsns", othersSsns.length);
 
-    // Mix the products to ensure 'theodore' products are distributed 
     // rather than clustered at the very beginning of the results.
-    for (let i = ssns.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ssns[i], ssns[j]] = [ssns[j], ssns[i]];
-    }
+    // for (let i = ssns.length - 1; i > 0; i--) {
+    //   const j = Math.floor(Math.random() * (i + 1));
+    //   [ssns[i], ssns[j]] = [ssns[j], ssns[i]];
+    // }
 
     if (!ssns?.length) {
       return res.status(200).json({
