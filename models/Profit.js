@@ -10,6 +10,10 @@ const profitSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    isCleared: {
+      type: Boolean,
+      default: false,
+    }
   },
 
   {

@@ -9,7 +9,8 @@ router
     .get('/',  adminDashController.getADminDashData)
     .get('/stats', adminDashController.getDashStats)
     .get('/sales', adminDashController.getSalesData)
-    .get('/profit', adminDashController.getProfitData);
+    .get('/profit', adminDashController.getProfitData)
+    .post('/clear-profits', adminDashController.clearAllProfit)
 
 
 

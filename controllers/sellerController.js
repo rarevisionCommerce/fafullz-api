@@ -21,7 +21,6 @@ const productMap = {
   ssn: Ssn,
 };
 
-
 const getMyProductCount = async (req, res) => {
   const sellerId = req.params.sellerId;
   if (!sellerId)
@@ -31,10 +30,7 @@ const getMyProductCount = async (req, res) => {
     return getProductCounttheodore(sellerId, res);
   }
   return getProductCountStandard(sellerId, res);
-
-
 };
-
 
 const getProductCountStandard = async (sellerId, res) => {
   try {
@@ -77,7 +73,7 @@ const getProductCountStandard = async (sellerId, res) => {
             sellerId: sellerId,
             status: "Sold",
             isPaid: "Not Paid",
-            isValid: { $ne: "validated" }
+            isValid: { $ne: "validated" },
           }).populate("price");
 
           soldProducts.forEach((product) => {
@@ -88,7 +84,12 @@ const getProductCountStandard = async (sellerId, res) => {
         } else {
           totalPrice = await ProductModel.aggregate([
             {
-              $match: { sellerId: sellerId, status: "Sold", isPaid: "Not Paid", isValid: { $ne: "validated" } },
+              $match: {
+                sellerId: sellerId,
+                status: "Sold",
+                isPaid: "Not Paid",
+                isValid: { $ne: "validated" },
+              },
             },
             { $group: { _id: null, total: { $sum: "$price" } } },
           ]).then((result) => result[0]?.total ?? 0);
@@ -101,7 +102,7 @@ const getProductCountStandard = async (sellerId, res) => {
         };
 
         products[item] = product;
-      })
+      }),
     );
 
     const sold = await SsnDob.find({
@@ -116,7 +117,7 @@ const getProductCountStandard = async (sellerId, res) => {
     console.log(error);
     return res.status(500).json({ message: "Something went wrong" });
   }
-}
+};
 
 const getProductCounttheodore = async (sellerId, res) => {
   try {
@@ -140,10 +141,7 @@ const getProductCounttheodore = async (sellerId, res) => {
         }
 
         const productCount = await ProductModel.countDocuments({
-          $or: [
-            { sellerId: sellerId },
-            { isValid: "validated" }
-          ]
+          $or: [{ sellerId: sellerId }, { isValid: "validated" }],
         }).exec();
 
         if (productCount > 0) {
@@ -151,10 +149,7 @@ const getProductCounttheodore = async (sellerId, res) => {
         }
 
         const soldCount = await ProductModel.countDocuments({
-          $or: [
-            { sellerId: sellerId },
-            { isValid: "validated" }
-          ],
+          $or: [{ sellerId: sellerId }, { isValid: "validated" }],
           status: "Sold",
         });
 
@@ -162,10 +157,7 @@ const getProductCounttheodore = async (sellerId, res) => {
 
         if (["ssn", "gVoice", "mail"].includes(item)) {
           const soldProducts = await ProductModel.find({
-            $or: [
-              { sellerId: sellerId },
-              { isValid: "validated" }
-            ],
+            $or: [{ sellerId: sellerId }, { isValid: "validated" }],
             status: "Sold",
             isPaid: "Not Paid",
           }).populate("price");
@@ -179,13 +171,10 @@ const getProductCounttheodore = async (sellerId, res) => {
           totalPrice = await ProductModel.aggregate([
             {
               $match: {
-                $or: [
-                  { sellerId: sellerId },
-                  { isValid: "validated" }
-                ],
+                $or: [{ sellerId: sellerId }, { isValid: "validated" }],
                 status: "Sold",
                 isPaid: "Not Paid",
-              }
+              },
             },
             { $group: { _id: null, total: { $sum: "$price" } } },
           ]).then((result) => result[0]?.total ?? 0);
@@ -198,7 +187,7 @@ const getProductCounttheodore = async (sellerId, res) => {
         };
 
         products[item] = product;
-      })
+      }),
     );
 
     res.status(200).json(products);
@@ -206,8 +195,7 @@ const getProductCounttheodore = async (sellerId, res) => {
     console.log(error);
     return res.status(500).json({ message: "Something went wrong" });
   }
-}
-
+};
 
 const deleteProductById = async (req, res) => {
   const { productId, productType } = req.params;
@@ -236,8 +224,8 @@ const deleteProductById = async (req, res) => {
 
 const updateIspaidStatusToAllSellersProducts = async (req, res) => {
   const sellerId = req.params.sellerId;
-  const amount = req.query.amount
-  const profit = req.query.profit || 0
+  const amount = req.query.amount;
+  const profit = req.query.profit || 0;
   if (!sellerId || !amount)
     return res.status(400).json({ message: "All fields are required" });
 
@@ -251,13 +239,13 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
     query = {
       sellerId: sellerId,
       status: "Sold",
-      isValid: { $ne: "validated" }
+      isValid: { $ne: "validated" },
     };
   }
 
   // Create an array of promises to find products in each schema
   const promises = Object.values(productMap).map((Product) =>
-    Product.updateMany(query, { isPaid: "Is Paid" })
+    Product.updateMany(query, { isPaid: "Is Paid" }),
   );
 
   try {
@@ -265,17 +253,18 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
     await Promise.all(promises);
     await WithdrawRequest.findOneAndUpdate(
       { sellerId: sellerId, status: "Pending" },
-      { $set: { status: "Processed", amount: amount } }
+      { $set: { status: "Processed", amount: amount } },
     );
 
-    if (profit > 0) {
+    if (profit > 0 && sellerId !== "theodore") {
+      const calculatedProfit = profit * 0.8;
       await Profit.create({
         userName: sellerId,
-        amount: profit,
-      })
+        amount: calculatedProfit,
+      });
     }
 
-    res.status(200).json({ message: "Product status updated successfully" });
+    res.status(200).json({ message: "Seller paid successfully" });
   } catch (err) {
     console.error(err);
     res.status(500).json({
@@ -300,7 +289,7 @@ const updateOneProductToIsPaid = async (req, res) => {
     const product = await productMap[productType].findByIdAndUpdate(
       productId,
       updates,
-      { new: true }
+      { new: true },
     );
     if (!product) {
       return res.status(404).json({ message: "Product not found" });
@@ -323,8 +312,11 @@ const suspendSellerProducts = async (req, res) => {
   }
 
   try {
-    const promises = Object.values(productMap).map(ProductModel =>
-      ProductModel.updateMany({ status: 'Available', sellerId }, { $set: { status: 'Suspended' } }).exec()
+    const promises = Object.values(productMap).map((ProductModel) =>
+      ProductModel.updateMany(
+        { status: "Available", sellerId },
+        { $set: { status: "Suspended" } },
+      ).exec(),
     );
 
     await Promise.all(promises);
@@ -337,7 +329,6 @@ const suspendSellerProducts = async (req, res) => {
     res.status(200).json({
       message: "Products suspended successfully",
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -345,7 +336,6 @@ const suspendSellerProducts = async (req, res) => {
     });
   }
 };
-
 
 const unSuspendSellerProducts = async (req, res) => {
   const { sellerId } = req.params;
@@ -355,8 +345,11 @@ const unSuspendSellerProducts = async (req, res) => {
   }
 
   try {
-    const promises = Object.values(productMap).map(ProductModel =>
-      ProductModel.updateMany({ status: 'Suspended', sellerId }, { $set: { status: 'Available' } }).exec()
+    const promises = Object.values(productMap).map((ProductModel) =>
+      ProductModel.updateMany(
+        { status: "Suspended", sellerId },
+        { $set: { status: "Available" } },
+      ).exec(),
     );
 
     await Promise.all(promises);
@@ -369,7 +362,6 @@ const unSuspendSellerProducts = async (req, res) => {
     res.status(200).json({
       message: "Products updated successfully",
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({
@@ -378,12 +370,11 @@ const unSuspendSellerProducts = async (req, res) => {
   }
 };
 
-
 module.exports = {
   getMyProductCount,
   deleteProductById,
   updateIspaidStatusToAllSellersProducts,
   updateOneProductToIsPaid,
   suspendSellerProducts,
-  unSuspendSellerProducts
+  unSuspendSellerProducts,
 };
