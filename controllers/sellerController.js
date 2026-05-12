@@ -10,6 +10,7 @@ const mongoose = require("mongoose");
 const WithdrawRequest = require("../models/WithdrawRequest");
 const Profit = require("../models/Profit");
 const SsnDob = require("../models/SsnDob");
+const User = require("../models/User");
 
 const productMap = {
   gVoice: GoogleVoice,
@@ -249,6 +250,12 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
   );
 
   try {
+    const user = await User.findOne({ jabberId: sellerId });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+
     // Execute all promises in parallel
     await Promise.all(promises);
     await WithdrawRequest.findOneAndUpdate(
@@ -256,8 +263,8 @@ const updateIspaidStatusToAllSellersProducts = async (req, res) => {
       { $set: { status: "Processed", amount: amount } },
     );
 
-    if (profit > 0 && sellerId !== "theodore") {
-      const calculatedProfit = profit * 0.8;
+    if (sellerId !== "theodore") {
+      const calculatedProfit = user?.roles?.includes("Admin") ? amount : profit * 0.8;
       await Profit.create({
         userName: sellerId,
         amount: calculatedProfit,
